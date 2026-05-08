@@ -132,7 +132,6 @@ Lab-8/
 ├── README.md                          ← You are here
 ├── QUICKSTART.md                      ← Get started in 5 minutes
 ├── GRADING-RUBRIC.md                  ← What the Safety Audit checks
-├── INSTRUCTOR-GUIDE.md                ← Session script and timing
 ├── SAFETY-AUDIT-BRIEF.md              ← The audit brief distributed today
 ├── guides/
 │   ├── mcp-production-guide.md        ← Auth, validation, sandboxing patterns
