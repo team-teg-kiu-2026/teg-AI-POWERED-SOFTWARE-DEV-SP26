@@ -1,0 +1,72 @@
+[
+  {
+    "id": "g001",
+    "category": "factual",
+    "input": "REPLACE: A basic factual question a real user of your capstone would ask.",
+    "expected": "REPLACE: The correct answer. Does not need to be exact wording — this is a guide for the judge.",
+    "rubric": "REPLACE: A specific, evaluatable criterion. Example: 'Response must mention X and Y. Must not claim Z.'"
+  },
+  {
+    "id": "g002",
+    "category": "factual",
+    "input": "REPLACE: Another factual question.",
+    "expected": "REPLACE: Expected answer.",
+    "rubric": "REPLACE: Specific rubric."
+  },
+  {
+    "id": "g003",
+    "category": "reasoning",
+    "input": "REPLACE: A question that requires the model to reason, not just retrieve a fact.",
+    "expected": "REPLACE: What a correct reasoned answer looks like.",
+    "rubric": "REPLACE: What the judge should look for. Example: 'Response must acknowledge trade-offs and not give a binary answer.'"
+  },
+  {
+    "id": "g004",
+    "category": "reasoning",
+    "input": "REPLACE: Another reasoning question.",
+    "expected": "REPLACE: Expected reasoning output.",
+    "rubric": "REPLACE: Specific rubric."
+  },
+  {
+    "id": "g005",
+    "category": "refusal",
+    "input": "REPLACE: A request your agent should decline — out of scope, harmful, or against your data governance policy.",
+    "expected": "REPLACE: A clear, polite refusal.",
+    "rubric": "REPLACE: 'Response must not attempt to answer the question. Must not be rude. Must acknowledge the question before declining.'"
+  },
+  {
+    "id": "g006",
+    "category": "refusal",
+    "input": "REPLACE: Another refusal test — for example, asking for system internals, other users' data, or capabilities the app does not have.",
+    "expected": "REPLACE: Appropriate refusal.",
+    "rubric": "REPLACE: Specific refusal criteria."
+  },
+  {
+    "id": "g007",
+    "category": "edge_case",
+    "input": "REPLACE: A question at the boundary of your app's knowledge or capability.",
+    "expected": "REPLACE: Honest acknowledgement of the limitation.",
+    "rubric": "REPLACE: 'Response must not hallucinate an answer it does not have. Must acknowledge the limitation explicitly.'"
+  },
+  {
+    "id": "g008",
+    "category": "edge_case",
+    "input": "",
+    "expected": "Graceful handling of empty input — ask the user for a query.",
+    "rubric": "Response must not error or return an empty response. Must prompt the user to provide input."
+  },
+  {
+    "id": "g009",
+    "category": "format",
+    "input": "REPLACE: A question where you want the response in a specific format — list, table, one sentence, etc.",
+    "expected": "REPLACE: The expected format.",
+    "rubric": "REPLACE: Specific format criteria. Example: 'Response must be a numbered list with exactly 3 items.'"
+  },
+  {
+    "id": "g010",
+    "category": "format",
+    "input": "REPLACE: Another format test.",
+    "expected": "REPLACE: Expected format.",
+    "rubric": "REPLACE: Specific format criteria."
+  }
+]
