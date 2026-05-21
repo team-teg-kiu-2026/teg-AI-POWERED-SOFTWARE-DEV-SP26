@@ -1,0 +1,10 @@
+{"ts": 1776448600.123, "event_type": "mcp_tool_call", "tool_name": "search_food_database", "input_hash": "a3f7b2c1d4e5f6", "result_status": "ok", "latency_ms": 142, "error": null}
+{"ts": 1776502800.456, "event_type": "mcp_tool_call", "tool_name": "search_food_database", "input_hash": "b2c9d3e4f5a6b7", "result_status": "ok", "latency_ms": 178, "error": null}
+{"ts": 1776556400.789, "event_type": "mcp_tool_call", "tool_name": "search_food_database", "input_hash": "0000000000000000", "result_status": "validation_failed", "latency_ms": 31, "error": "query exceeds 500 character limit"}
+{"ts": 1776610800.012, "event_type": "mcp_tool_call", "tool_name": "search_food_database", "input_hash": "c4d5e6f7a8b9c0", "result_status": "ok", "latency_ms": 159, "error": null}
+{"ts": 1776664200.345, "event_type": "mcp_tool_call", "tool_name": "log_meal_intake", "input_hash": "d6e7f8a9b0c1d2", "result_status": "ok", "latency_ms": 203, "error": null}
+{"ts": 1776718600.678, "event_type": "mcp_tool_call", "tool_name": "search_food_database", "input_hash": "", "result_status": "auth_failed", "latency_ms": 8, "error": "unauthorized"}
+{"ts": 1776772800.901, "event_type": "mcp_tool_call", "tool_name": "search_food_database", "input_hash": "e8f9a0b1c2d3e4", "result_status": "ok", "latency_ms": 131, "error": null}
+{"ts": 1776826400.234, "event_type": "mcp_tool_call", "tool_name": "log_meal_intake", "input_hash": "f0a1b2c3d4e5f6", "result_status": "ok", "latency_ms": 215, "error": null}
+{"ts": 1776880800.567, "event_type": "mcp_tool_call", "tool_name": "search_food_database", "input_hash": "a1b2c3d4e5f6a8", "result_status": "ok", "latency_ms": 118, "error": null}
+{"ts": 1776934200.890, "event_type": "mcp_tool_call", "tool_name": "search_food_database", "input_hash": "b3c4d5e6f7a8b9", "result_status": "ok", "latency_ms": 166, "error": null}
