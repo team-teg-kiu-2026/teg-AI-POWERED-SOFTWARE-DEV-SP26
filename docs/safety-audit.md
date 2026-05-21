@@ -3,7 +3,7 @@
 **Team Name:** TEG  
 **Team Members:** Tekla Kilasonia · Giorgi Papidze  
 **Repository:** https://github.com/ZA-KIU-Classroom/AI-POWERED-SOFTWARE-DEV-SP26  
-**Audit Commit:** *(tag: lab8-mcp-capstone — see most recent commit SHA)*  
+**Audit Commit:** `bc11e96` (tag: `lab8-mcp-capstone`)  
 **Submitted:** 14 May 2026
 
 ---
