@@ -41,6 +41,45 @@ ANALYSIS_SCHEMA = """{
   "items_detected": [<string>, ...]
 }"""
 
+PLAN_SCHEMA = """{
+  "summary": <string>,
+  "meals": [
+    {
+      "name": <string>,
+      "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
+      "ingredients": [<string>, ...],
+      "calories": <number>,
+      "protein_g": <number>,
+      "carbs_g": <number>,
+      "fat_g": <number>,
+      "uses_inventory": [<string>, ...],
+      "reason": <string>
+    }
+  ]
+}"""
+
+
+def _profile_context(profile: dict | None, today_totals: dict | None) -> str:
+    if not profile:
+        return ""
+    lines = [
+        f"User goals: {profile.get('calorie_target', 2000)} kcal/day, "
+        f"{profile.get('protein_target_g', 120)}g protein, "
+        f"{profile.get('carbs_target_g', 250)}g carbs, "
+        f"{profile.get('fat_target_g', 70)}g fat.",
+        f"Restrictions: {', '.join(profile.get('dietary_restrictions') or []) or 'none'}.",
+        f"Allergies: {', '.join(profile.get('allergies') or []) or 'none'}.",
+    ]
+    if today_totals:
+        lines.append(
+            f"Today so far: {today_totals.get('calories', 0)}/{profile.get('calorie_target', 2000)} kcal, "
+            f"{today_totals.get('protein_g', 0)}/{profile.get('protein_target_g', 120)}g protein, "
+            f"{today_totals.get('carbs_g', 0)}/{profile.get('carbs_target_g', 250)}g carbs, "
+            f"{today_totals.get('fat_g', 0)}/{profile.get('fat_target_g', 70)}g fat."
+        )
+    lines.append("Take this into account when detecting imbalances and suggesting corrections.")
+    return "\n\n" + "\n".join(lines)
+
 
 def _client() -> OpenAI:
     return OpenAI(
@@ -130,16 +169,24 @@ def _call_with_fallback(messages: list[dict]) -> tuple[dict, str]:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def analyze_meal(meal_text: str, inventory: list[str], today_history: list[dict]) -> dict:
+def analyze_meal(
+    meal_text: str,
+    inventory: list[str],
+    today_history: list[dict],
+    profile: dict | None = None,
+    today_totals: dict | None = None,
+) -> dict:
     inventory_str = ", ".join(inventory) if inventory else "none specified"
     history_str   = json.dumps(today_history) if today_history else "nothing logged yet"
+    profile_ctx   = _profile_context(profile, today_totals)
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": (
             f"Analyse this meal: {meal_text}\n\n"
             f"User's available ingredients: {inventory_str}\n"
-            f"Today's intake so far: {history_str}\n\n"
+            f"Today's intake so far: {history_str}"
+            f"{profile_ctx}\n\n"
             f"Respond only with JSON matching:\n{ANALYSIS_SCHEMA}"
         )},
     ]
@@ -148,9 +195,15 @@ def analyze_meal(meal_text: str, inventory: list[str], today_history: list[dict]
     return data
 
 
-def analyze_meal_image(image_bytes: bytes, inventory: list[str]) -> dict:
+def analyze_meal_image(
+    image_bytes: bytes,
+    inventory: list[str],
+    profile: dict | None = None,
+    today_totals: dict | None = None,
+) -> dict:
     b64 = base64.b64encode(image_bytes).decode()
     inventory_str = ", ".join(inventory) if inventory else "none specified"
+    profile_ctx   = _profile_context(profile, today_totals)
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -158,10 +211,58 @@ def analyze_meal_image(image_bytes: bytes, inventory: list[str]) -> dict:
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
             {"type": "text", "text": (
                 f"Identify the foods in this image and analyse nutritional content.\n"
-                f"User's available ingredients: {inventory_str}\n\n"
+                f"User's available ingredients: {inventory_str}"
+                f"{profile_ctx}\n\n"
                 f"Respond only with JSON matching:\n{ANALYSIS_SCHEMA}"
             )},
         ]},
+    ]
+    data, model = _call_with_fallback(messages)
+    data["model_used"] = model
+    return data
+
+
+def plan_day(profile: dict, inventory: list[str], today_totals: dict | None = None) -> dict:
+    inventory_str = ", ".join(inventory) if inventory else "none specified"
+    restrictions  = ", ".join(profile.get("dietary_restrictions") or []) or "none"
+    allergies     = ", ".join(profile.get("allergies") or []) or "none"
+    goals         = ", ".join(profile.get("goals") or []) or "general health"
+
+    totals_line = ""
+    if today_totals:
+        totals_line = (
+            f"\nAlready consumed today: {today_totals.get('calories', 0)} kcal, "
+            f"{today_totals.get('protein_g', 0)}g protein, "
+            f"{today_totals.get('carbs_g', 0)}g carbs, "
+            f"{today_totals.get('fat_g', 0)}g fat. "
+            f"Plan the REMAINING meals only."
+        )
+
+    system_msg = (
+        SYSTEM_PROMPT
+        + " When planning a day, strictly respect dietary restrictions and allergies. "
+          "Honor user goals: weight_loss → lower calories with high protein/fiber; "
+          "muscle_gain → high protein; maintenance → balanced macros. "
+          "Prefer meals using items from the user's inventory."
+    )
+
+    user_msg = (
+        f"Plan a day of meals.\n\n"
+        f"Daily targets: {profile.get('calorie_target', 2000)} kcal, "
+        f"{profile.get('protein_target_g', 120)}g protein, "
+        f"{profile.get('carbs_target_g', 250)}g carbs, "
+        f"{profile.get('fat_target_g', 70)}g fat.\n"
+        f"Dietary restrictions: {restrictions}\n"
+        f"Allergies: {allergies}\n"
+        f"Goals: {goals}\n"
+        f"Available inventory: {inventory_str}"
+        f"{totals_line}\n\n"
+        f"Respond only with JSON matching:\n{PLAN_SCHEMA}"
+    )
+
+    messages = [
+        {"role": "system", "content": system_msg},
+        {"role": "user", "content": user_msg},
     ]
     data, model = _call_with_fallback(messages)
     data["model_used"] = model

@@ -1,37 +1,38 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Manrope, Inter } from "next/font/google";
 import "./globals.css";
+import { TopBar, BottomNav } from "./_chrome";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "NutriSmart",
+  title: "NutriSmart — Vitality",
   description: "AI-powered nutrition assistant for students",
 };
 
-const NAV_LINKS = [
-  { href: "/", label: "Dashboard" },
-  { href: "/log", label: "Log Meal" },
-  { href: "/inventory", label: "Inventory" },
-  { href: "/history", label: "History" },
-];
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
-        <nav className="bg-brand text-white shadow-md">
-          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-8">
-            <span className="font-bold text-xl tracking-tight">NutriSmart</span>
-            {NAV_LINKS.map(({ href, label }) => (
-              <Link key={href} href={href} className="text-sm font-medium hover:text-brand-light transition-colors">
-                {label}
-              </Link>
-            ))}
-          </div>
-        </nav>
-        <main className="max-w-4xl mx-auto px-6 py-8">{children}</main>
-        <footer className="text-center text-xs text-gray-400 py-6">
-          NutriSmart is not a medical tool. Always consult a professional for dietary advice.
-        </footer>
+    <html lang="en" className={`light ${manrope.variable} ${inter.variable}`}>
+      <body className="bg-surface font-body text-on-surface min-h-screen pb-36">
+        <TopBar />
+        <main className="pt-24 px-6 max-w-2xl mx-auto space-y-8">
+          {children}
+          <footer className="mt-12 pt-6 border-t border-outline-variant/30 text-center text-xs text-on-surface-variant leading-relaxed">
+            NutriSmart is not a medical or dietary tool. Always consult a professional for clinical decisions.
+          </footer>
+        </main>
+        <BottomNav />
       </body>
     </html>
   );

@@ -11,6 +11,30 @@ import {
 
 const UNITS = ["piece", "g", "kg", "ml", "L", "cup", "tbsp", "tsp"];
 
+const ICON_FOR: Record<string, string> = {
+  chicken: "egg_alt",
+  beef:    "lunch_dining",
+  fish:    "set_meal",
+  rice:    "rice_bowl",
+  bread:   "bakery_dining",
+  milk:    "local_drink",
+  egg:     "egg",
+  coffee:  "coffee",
+  tea:     "emoji_food_beverage",
+  fruit:   "nutrition",
+  apple:   "nutrition",
+  banana:  "nutrition",
+  veg:     "grass",
+};
+
+function iconFor(name: string): string {
+  const lower = name.toLowerCase();
+  for (const [key, icon] of Object.entries(ICON_FOR)) {
+    if (lower.includes(key)) return icon;
+  }
+  return "kitchen";
+}
+
 export default function Inventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,66 +83,104 @@ export default function Inventory() {
   }
 
   return (
-    <div className="space-y-6 max-w-xl">
-      <h1 className="text-2xl font-bold">Fridge & Pantry</h1>
+    <>
+      {/* Header */}
+      <section>
+        <h1 className="text-3xl font-extrabold tracking-tighter text-on-surface font-headline">
+          Your pantry
+        </h1>
+        <p className="text-on-surface-variant text-sm mt-1">
+          What's in your fridge powers our meal suggestions.
+        </p>
+      </section>
 
-      <div className="card space-y-3">
-        <h2 className="font-semibold text-gray-700">Add ingredient</h2>
-        <div className="flex gap-2">
+      {/* Add form */}
+      <section className="card-soft space-y-4">
+        <h2 className="text-xs font-bold font-label uppercase tracking-widest text-on-surface-variant">
+          Add ingredient
+        </h2>
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
-            className="input"
+            className="input-soft flex-1"
             placeholder="Item name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           />
           <input
-            className="input w-20"
+            className="input-soft sm:w-24"
             type="number"
             min="0"
             step="0.1"
             value={qty}
             onChange={(e) => setQty(e.target.value)}
           />
-          <select className="input w-24" value={unit} onChange={(e) => setUnit(e.target.value)}>
+          <select
+            className="input-soft sm:w-28 appearance-none"
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+          >
             {UNITS.map((u) => <option key={u}>{u}</option>)}
           </select>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button className="btn-primary" onClick={handleAdd} disabled={adding || !name.trim()}>
-          {adding ? "Adding…" : "Add"}
+        {error && (
+          <p className="text-sm text-error bg-error-container/20 rounded-lg px-3 py-2">{error}</p>
+        )}
+        <button className="btn-primary w-full" onClick={handleAdd} disabled={adding || !name.trim()}>
+          {adding ? "Adding…" : "Add to pantry"}
         </button>
-      </div>
+      </section>
 
-      <div className="card space-y-2">
-        <h2 className="font-semibold text-gray-700">
-          Inventory <span className="text-gray-400 font-normal">({items.length} items)</span>
-        </h2>
+      {/* List */}
+      <section>
+        <div className="flex justify-between items-end mb-6 px-1">
+          <h2 className="text-xl font-extrabold tracking-tight font-headline">Inventory</h2>
+          <span className="text-xs font-medium text-primary font-label uppercase tracking-wider">
+            {items.length} {items.length === 1 ? "item" : "items"}
+          </span>
+        </div>
 
         {loading ? (
-          <p className="text-sm text-gray-400">Loading…</p>
+          <p className="text-sm text-on-surface-variant">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-gray-400">No items yet. Add something from your fridge or pantry.</p>
+          <div className="card-soft text-center">
+            <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-2">
+              kitchen
+            </span>
+            <p className="text-sm text-on-surface-variant">
+              Empty pantry. Add something from your fridge or cupboard.
+            </p>
+          </div>
         ) : (
-          <ul className="divide-y divide-gray-50">
+          <ul className="space-y-3">
             {items.map((item) => (
-              <li key={item.id} className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium">{item.item_name}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-500">{item.quantity} {item.unit}</span>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-xs text-red-500 hover:text-red-700"
-                    aria-label={`Remove ${item.item_name}`}
-                  >
-                    Remove
-                  </button>
+              <li
+                key={item.id}
+                className="flex items-center gap-4 p-4 bg-surface-container-lowest rounded-xl group hover:shadow-md transition-shadow"
+              >
+                <div className="w-14 h-14 rounded-lg bg-primary-container/40 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-primary">
+                    {iconFor(item.item_name)}
+                  </span>
                 </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-on-surface truncate">{item.item_name}</h3>
+                  <p className="text-xs text-on-surface-variant">
+                    {item.quantity} {item.unit}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  aria-label={`Remove ${item.item_name}`}
+                  className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-error-container/40 hover:text-error transition-colors"
+                >
+                  <span className="material-symbols-outlined">delete</span>
+                </button>
               </li>
             ))}
           </ul>
         )}
-      </div>
-    </div>
+      </section>
+    </>
   );
 }

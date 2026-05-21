@@ -21,11 +21,30 @@ CREATE TABLE IF NOT EXISTS meal_logs (
     created_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id              TEXT        PRIMARY KEY,
+    calorie_target       INTEGER     DEFAULT 2000,
+    protein_target_g     INTEGER     DEFAULT 120,
+    carbs_target_g       INTEGER     DEFAULT 250,
+    fat_target_g         INTEGER     DEFAULT 70,
+    dietary_restrictions TEXT[]      DEFAULT '{}',
+    allergies            TEXT[]      DEFAULT '{}',
+    goals                TEXT[]      DEFAULT '{}',
+    age                  INTEGER,
+    sex                  TEXT        CHECK (sex IN ('male','female','other','prefer_not_to_say')),
+    height_cm            NUMERIC,
+    weight_kg            NUMERIC,
+    activity_level       TEXT        CHECK (activity_level IN ('sedentary','light','moderate','active','very_active')),
+    updated_at           TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Enable Row Level Security (configure policies in the Supabase dashboard
 -- once you add proper authentication).
-ALTER TABLE inventory  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE meal_logs  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE meal_logs      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles  ENABLE ROW LEVEL SECURITY;
 
 -- Permissive dev policy — remove before production.
-CREATE POLICY "allow_all_dev" ON inventory  FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all_dev" ON meal_logs  FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all_dev" ON inventory      FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all_dev" ON meal_logs      FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all_dev" ON user_profiles  FOR ALL USING (true) WITH CHECK (true);

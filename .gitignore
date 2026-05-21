@@ -26,3 +26,6 @@ Thumbs.db
 
 # Build
 *.log
+
+# Stitch HTML cache (regenerated from Stitch MCP)
+.stitch-cache/

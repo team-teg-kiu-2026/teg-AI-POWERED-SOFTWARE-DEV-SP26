@@ -8,3 +8,4 @@ mcp>=1.0.0
 httpx>=0.25.0
 pytest>=7.0.0
 requests>=2.28.0
+pip-system-certs>=4.0; sys_platform == "win32"

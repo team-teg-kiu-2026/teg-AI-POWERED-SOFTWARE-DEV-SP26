@@ -41,6 +41,23 @@ export interface MealLog {
   created_at: string;
 }
 
+export interface UserProfile {
+  user_id: string;
+  calorie_target: number;
+  protein_target_g: number;
+  carbs_target_g: number;
+  fat_target_g: number;
+  dietary_restrictions: string[];
+  allergies: string[];
+  goals: string[];
+  age: number | null;
+  sex: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  activity_level: string | null;
+  updated_at: string;
+}
+
 // ── Meal analysis ─────────────────────────────────────────────────────────────
 
 export async function analyzeMeal(
@@ -112,5 +129,23 @@ export async function logMeal(userId: string, analysis: MealAnalysis, descriptio
     }),
   });
   if (!res.ok) throw new Error("Failed to log meal");
+  return res.json();
+}
+
+// ── Profile ──────────────────────────────────────────────────────────────────
+
+export async function getProfile(userId: string): Promise<UserProfile> {
+  const res = await fetch(`${API_URL}/api/profile?user_id=${userId}`);
+  if (!res.ok) throw new Error("Failed to load profile");
+  return res.json();
+}
+
+export async function updateProfile(userId: string, patch: Partial<UserProfile>): Promise<UserProfile> {
+  const res = await fetch(`${API_URL}/api/profile`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, ...patch }),
+  });
+  if (!res.ok) throw new Error("Failed to save profile");
   return res.json();
 }
