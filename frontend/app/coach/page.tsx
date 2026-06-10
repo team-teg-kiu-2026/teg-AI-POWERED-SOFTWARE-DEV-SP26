@@ -1,14 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { sendChat, getChatHistory, clearChatHistory } from "@/lib/api";
+import Link from "next/link";
+import {
+  sendChat,
+  getChatHistory,
+  clearChatHistory,
+  generateWeekPlan,
+  generateShoppingList,
+  getDailyPlan,
+  weekStartOf,
+} from "@/lib/api";
 import { useUserId } from "@/lib/auth";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const STARTERS = [
   "Am I getting enough protein today?",
-  "What’s a healthy snack from my fridge?",
+  "What's a healthy snack from my fridge?",
   "How do I cut sugar without feeling tired?",
 ];
 
@@ -20,9 +29,9 @@ export default function Coach() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastSent, setLastSent] = useState("");
+  const [actionResult, setActionResult] = useState<{ type: string; message: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load chat history on mount
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
@@ -31,7 +40,7 @@ export default function Coach() {
         history.map((m) => ({ role: m.role, content: m.content }))
       );
     } catch {
-      // Silently fall back to empty state
+      // Fall back to empty state
     } finally {
       setHistoryLoading(false);
     }
@@ -43,12 +52,13 @@ export default function Coach() {
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, loading]);
+  }, [messages, loading, actionResult]);
 
   async function handleSend(text?: string) {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
     setError("");
+    setActionResult(null);
     setInput("");
     setLastSent(msg);
     setMessages((m) => [...m, { role: "user", content: msg }]);
@@ -66,7 +76,12 @@ export default function Coach() {
   function handleRetry() {
     if (!lastSent) return;
     setError("");
-    setMessages((m) => m.filter((_, i) => !(i === m.length - 1 && m[i].role === "user" && m[i].content === lastSent)));
+    setMessages((m) =>
+      m.filter(
+        (_, i) =>
+          !(i === m.length - 1 && m[i].role === "user" && m[i].content === lastSent)
+      )
+    );
     handleSend(lastSent);
   }
 
@@ -75,8 +90,69 @@ export default function Coach() {
       await clearChatHistory(userId);
       setMessages([]);
       setError("");
+      setActionResult(null);
     } catch {
       setError("Failed to clear chat history.");
+    }
+  }
+
+  async function handlePlanWeek() {
+    setLoading(true);
+    setError("");
+    setActionResult(null);
+    setMessages((m) => [...m, { role: "user", content: "Plan my meals for this week" }]);
+    try {
+      const ws = weekStartOf();
+      const result = await generateWeekPlan(userId, ws);
+      const count = result.plans.length;
+      const msg = `Done! I’ve planned ${count} meals across the week and saved them to your calendar. Head to the Calendar page to see your full week.`;
+      setMessages((m) => [...m, { role: "assistant", content: msg }]);
+      setActionResult({ type: "calendar", message: `${count} meals added to calendar` });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate week plan.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePlanToday() {
+    setLoading(true);
+    setError("");
+    setActionResult(null);
+    setMessages((m) => [...m, { role: "user", content: "Plan my meals for today" }]);
+    try {
+      const result = await getDailyPlan(userId);
+      const count = result.meals.length;
+      const names = result.meals.map((m) => m.name).join(", ");
+      const msg = `Here’s your plan for today (${count} meals): ${names}.\n\n${result.summary}\n\nThese have been saved to your calendar automatically.`;
+      setMessages((m) => [...m, { role: "assistant", content: msg }]);
+      setActionResult({ type: "calendar", message: `${count} meals added to today` });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate today’s plan.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleShoppingList() {
+    setLoading(true);
+    setError("");
+    setActionResult(null);
+    setMessages((m) => [...m, { role: "user", content: "Generate my shopping list" }]);
+    try {
+      const ws = weekStartOf();
+      const items = await generateShoppingList(userId, ws);
+      const count = items.length;
+      const topItems = items.slice(0, 5).map((i) => i.item_name).join(", ");
+      const msg = count > 0
+        ? `Your shopping list is ready with ${count} items! Top items: ${topItems}${count > 5 ? "..." : ""}. Check the Shopping page for the full list.`
+        : "No items needed — your pantry covers this week’s plan!";
+      setMessages((m) => [...m, { role: "assistant", content: msg }]);
+      setActionResult({ type: "shopping", message: `${count} items on your list` });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate shopping list.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -122,13 +198,6 @@ export default function Coach() {
             <div className="w-8 h-8 rounded-full bg-primary-container/40 shrink-0" />
             <div className="h-16 w-64 bg-surface-container-lowest rounded-2xl rounded-bl-md" />
           </div>
-          <div className="flex justify-end">
-            <div className="h-10 w-36 bg-primary/10 rounded-2xl rounded-br-md" />
-          </div>
-          <div className="flex gap-2 items-end">
-            <div className="w-8 h-8 rounded-full bg-primary-container/40 shrink-0" />
-            <div className="h-12 w-56 bg-surface-container-lowest rounded-2xl rounded-bl-md" />
-          </div>
         </section>
       )}
 
@@ -161,6 +230,39 @@ export default function Coach() {
         </section>
       )}
 
+      {/* Quick actions */}
+      {!historyLoading && (
+        <section className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handlePlanWeek}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 bg-primary-container/30 text-on-primary-container px-3 py-2 rounded-full text-xs font-bold hover:bg-primary-container/50 active:scale-[0.98] transition-all disabled:opacity-40"
+          >
+            <span className="material-symbols-outlined text-sm">calendar_month</span>
+            Plan my week
+          </button>
+          <button
+            type="button"
+            onClick={handlePlanToday}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 bg-primary-container/30 text-on-primary-container px-3 py-2 rounded-full text-xs font-bold hover:bg-primary-container/50 active:scale-[0.98] transition-all disabled:opacity-40"
+          >
+            <span className="material-symbols-outlined text-sm">today</span>
+            Plan today
+          </button>
+          <button
+            type="button"
+            onClick={handleShoppingList}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 bg-secondary-container/30 text-on-secondary-container px-3 py-2 rounded-full text-xs font-bold hover:bg-secondary-container/50 active:scale-[0.98] transition-all disabled:opacity-40"
+          >
+            <span className="material-symbols-outlined text-sm">shopping_cart</span>
+            Shopping list
+          </button>
+        </section>
+      )}
+
       {/* Chat thread */}
       {!empty && !historyLoading && (
         <section className="space-y-4">
@@ -170,6 +272,24 @@ export default function Coach() {
           {loading && <TypingBubble />}
           <div ref={scrollRef} />
         </section>
+      )}
+
+      {/* Action result banner */}
+      {actionResult && (
+        <Link
+          href={actionResult.type === "calendar" ? "/calendar" : "/shopping"}
+          className="flex items-center gap-3 bg-primary-container/30 border border-primary/15 rounded-xl px-4 py-3 hover:bg-primary-container/50 transition-colors"
+        >
+          <span className="material-symbols-outlined material-symbols-filled text-primary text-lg">
+            {actionResult.type === "calendar" ? "event_available" : "shopping_cart"}
+          </span>
+          <span className="flex-1 text-sm font-semibold text-on-primary-container">
+            {actionResult.message}
+          </span>
+          <span className="material-symbols-outlined text-on-primary-container/60 text-base">
+            arrow_forward
+          </span>
+        </Link>
       )}
 
       {/* Error */}
