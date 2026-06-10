@@ -58,6 +58,32 @@ PLAN_SCHEMA = """{
   ]
 }"""
 
+WEEK_PLAN_SCHEMA = """{
+  "days": [
+    {
+      "date": "<YYYY-MM-DD>",
+      "meals": [
+        {
+          "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
+          "name": <string>,
+          "ingredients": [<string>, ...],
+          "calories": <number>,
+          "protein_g": <number>,
+          "carbs_g": <number>,
+          "fat_g": <number>,
+          "uses_inventory": [<string>, ...]
+        }
+      ]
+    }
+  ]
+}"""
+
+SHOPPING_SCHEMA = """{
+  "items": [
+    {"item_name": <string>, "quantity": <number>, "unit": <string>}
+  ]
+}"""
+
 
 def _profile_context(profile: dict | None, today_totals: dict | None) -> str:
     if not profile:
@@ -263,6 +289,78 @@ def plan_day(profile: dict, inventory: list[str], today_totals: dict | None = No
     messages = [
         {"role": "system", "content": system_msg},
         {"role": "user", "content": user_msg},
+    ]
+    data, model = _call_with_fallback(messages)
+    data["model_used"] = model
+    return data
+
+
+def plan_week(
+    profile: dict,
+    inventory: list[str],
+    week_start: str,
+    days: int = 7,
+) -> dict:
+    inventory_str = ", ".join(inventory) if inventory else "none specified"
+    restrictions = ", ".join(profile.get("dietary_restrictions") or []) or "none"
+    allergies = ", ".join(profile.get("allergies") or []) or "none"
+    goals = ", ".join(profile.get("goals") or []) or "general health"
+
+    from datetime import date as _d, timedelta
+    start = _d.fromisoformat(week_start)
+    dates = [(start + timedelta(days=i)).isoformat() for i in range(days)]
+    dates_str = ", ".join(dates)
+
+    system_msg = (
+        SYSTEM_PROMPT
+        + " When planning a week, strictly respect dietary restrictions and allergies. "
+          "Vary meals across days — no two consecutive days should share a main dish. "
+          "Prefer meals using items from the user's inventory. "
+          "Return exactly one entry per date provided."
+    )
+
+    user_msg = (
+        f"Plan meals for these dates: {dates_str}\n\n"
+        f"Daily targets: {profile.get('calorie_target', 2000)} kcal, "
+        f"{profile.get('protein_target_g', 120)}g protein, "
+        f"{profile.get('carbs_target_g', 250)}g carbs, "
+        f"{profile.get('fat_target_g', 70)}g fat.\n"
+        f"Dietary restrictions: {restrictions}\n"
+        f"Allergies: {allergies}\n"
+        f"Goals: {goals}\n"
+        f"Available inventory: {inventory_str}\n\n"
+        f"Respond only with JSON matching:\n{WEEK_PLAN_SCHEMA}"
+    )
+
+    messages = [
+        {"role": "system", "content": system_msg},
+        {"role": "user", "content": user_msg},
+    ]
+    data, model = _call_with_fallback(messages)
+    data["model_used"] = model
+    return data
+
+
+def generate_shopping_list(
+    meal_plans: list[dict],
+    inventory: list[str],
+) -> dict:
+    meals_text = json.dumps(
+        [{"name": m.get("meal_name", ""), "ingredients": m.get("ingredients", [])} for m in meal_plans],
+        indent=2,
+    )
+    inventory_str = ", ".join(inventory) if inventory else "none"
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": (
+            f"Given these planned meals:\n{meals_text}\n\n"
+            f"And these items already in the user's pantry: {inventory_str}\n\n"
+            f"Generate a consolidated shopping list of items the user needs to BUY "
+            f"(exclude anything already in the pantry). "
+            f"Merge duplicate ingredients across meals and estimate total quantities.\n\n"
+            f"Respond only with JSON matching:\n{SHOPPING_SCHEMA}"
+        )},
     ]
     data, model = _call_with_fallback(messages)
     data["model_used"] = model

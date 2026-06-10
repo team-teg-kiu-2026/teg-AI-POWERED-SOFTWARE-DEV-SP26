@@ -1,50 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEMO_USER_ID } from "@/lib/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
-interface Profile {
-  user_id: string;
-  calorie_target: number;
-  protein_target_g: number;
-  carbs_target_g: number;
-  fat_target_g: number;
-  dietary_restrictions: string[];
-  allergies: string[];
-  goals: string[];
-  age: number | null;
-  sex: string | null;
-  height_cm: number | null;
-  weight_kg: number | null;
-  activity_level: string | null;
-  updated_at: string;
-}
-
-async function getProfile(userId: string): Promise<Profile> {
-  const res = await fetch(`${API_URL}/api/profile?user_id=${userId}`);
-  if (!res.ok) throw new Error("Failed to load profile");
-  return res.json();
-}
-async function updateProfile(userId: string, patch: Partial<Profile>): Promise<Profile> {
-  const res = await fetch(`${API_URL}/api/profile`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, ...patch }),
-  });
-  if (!res.ok) throw new Error("Failed to save profile");
-  return res.json();
-}
-async function exportData(userId: string): Promise<Blob> {
-  const res = await fetch(`${API_URL}/api/user/export?user_id=${userId}`);
-  if (!res.ok) throw new Error("Export failed");
-  return res.blob();
-}
-async function deleteAllData(userId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/api/user/data?user_id=${userId}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Delete failed");
-}
+import { getProfile, updateProfile, exportData, deleteAllData, type UserProfile } from "@/lib/api";
+import { useAuth, useUserId } from "@/lib/auth";
 
 const RESTRICTION_PRESETS = ["Vegetarian", "Vegan", "Halal", "Kosher", "Gluten-free", "Lactose-free"];
 const GOAL_PRESETS = ["Weight loss", "Muscle gain", "Maintenance", "Energy", "Better sleep"];
@@ -75,7 +33,9 @@ function SavedPill({ show }: { show: boolean }) {
 }
 
 export default function Settings() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { logout } = useAuth();
+  const userId = useUserId();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -109,7 +69,7 @@ export default function Settings() {
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   useEffect(() => {
-    getProfile(DEMO_USER_ID)
+    getProfile(userId)
       .then((p) => {
         setProfile(p);
         setCalorieTarget(String(p.calorie_target ?? ""));
@@ -127,7 +87,7 @@ export default function Settings() {
       })
       .catch(() => setError("Could not load profile. Is the backend running?"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId]);
 
   function flashSaved(setter: (b: boolean) => void) {
     setter(true);
@@ -138,7 +98,7 @@ export default function Settings() {
     setSavingTargets(true);
     setError("");
     try {
-      const updated = await updateProfile(DEMO_USER_ID, {
+      const updated = await updateProfile(userId, {
         calorie_target: parseInt(calorieTarget) || 0,
         protein_target_g: parseInt(proteinTarget) || 0,
         carbs_target_g: parseInt(carbsTarget) || 0,
@@ -161,7 +121,7 @@ export default function Settings() {
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      const updated = await updateProfile(DEMO_USER_ID, {
+      const updated = await updateProfile(userId, {
         dietary_restrictions: restrictions,
         allergies,
         goals,
@@ -180,7 +140,7 @@ export default function Settings() {
     setSavingAbout(true);
     setError("");
     try {
-      const updated = await updateProfile(DEMO_USER_ID, {
+      const updated = await updateProfile(userId, {
         age: age.trim() ? parseInt(age) : null,
         sex: sex || null,
         height_cm: heightCm.trim() ? parseFloat(heightCm) : null,
@@ -205,12 +165,12 @@ export default function Settings() {
     setExporting(true);
     setError("");
     try {
-      const blob = await exportData(DEMO_USER_ID);
+      const blob = await exportData(userId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       const date = new Date().toISOString().slice(0, 10);
-      a.download = `nutrismart-${DEMO_USER_ID}-${date}.json`;
+      a.download = `nutrismart-${userId}-${date}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -226,7 +186,7 @@ export default function Settings() {
     if (deleteConfirmText !== "DELETE") return;
     setDeleting(true);
     try {
-      await deleteAllData(DEMO_USER_ID);
+      await deleteAllData(userId);
       setDeleteSuccess(true);
       setShowDeleteModal(false);
     } catch {
@@ -509,6 +469,13 @@ export default function Settings() {
             </p>
 
             <div className="flex flex-col gap-2">
+              <button className="btn-soft w-full" onClick={logout}>
+                <span className="inline-flex items-center gap-2 justify-center">
+                  <span className="material-symbols-outlined text-base">logout</span>
+                  Log out
+                </span>
+              </button>
+
               <button className="btn-soft" onClick={handleExport} disabled={exporting}>
                 <span className="inline-flex items-center gap-2 justify-center">
                   <span className="material-symbols-outlined text-base">download</span>

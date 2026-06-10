@@ -1,35 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DEMO_USER_ID } from "@/lib/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
-interface PlannedMeal {
-  name: string;
-  meal_type: "breakfast" | "lunch" | "dinner" | "snack";
-  ingredients: string[];
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  uses_inventory: string[];
-  reason: string;
-}
-interface DailyPlan {
-  summary: string;
-  meals: PlannedMeal[];
-  model_used: string;
-}
-
-async function getDailyPlan(userId: string): Promise<DailyPlan> {
-  const res = await fetch(`${API_URL}/api/plan?user_id=${userId}`);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error ?? "Plan generation failed");
-  }
-  return res.json();
-}
+import { getDailyPlan, type PlannedMeal, type DailyPlan } from "@/lib/api";
+import { useUserId } from "@/lib/auth";
 
 const MEAL_ORDER: Record<PlannedMeal["meal_type"], number> = {
   breakfast: 0, lunch: 1, dinner: 2, snack: 3,
@@ -43,6 +16,7 @@ const MEAL_ICON: Record<PlannedMeal["meal_type"], string> = {
 };
 
 export default function Plan() {
+  const userId = useUserId();
   const [plan, setPlan] = useState<DailyPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -50,11 +24,11 @@ export default function Plan() {
   const fetchPlan = useCallback(() => {
     setLoading(true);
     setError("");
-    getDailyPlan(DEMO_USER_ID)
+    getDailyPlan(userId)
       .then(setPlan)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId]);
 
   useEffect(() => { fetchPlan(); }, [fetchPlan]);
 

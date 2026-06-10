@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**NutriSmart** is an AI-powered nutrition assistant for university students. Users define their fridge/pantry inventory, log meals (text or photo), and get real-time nutrient analysis plus correction suggestions that use ingredients they already have at home. The differentiator over generic calorie trackers is cross-day imbalance detection backed by a personalized profile.
+**NutriSmart** is an AI-powered nutrition assistant for university students. Users register an account, define their fridge/pantry inventory, log meals (text or photo), and get real-time nutrient analysis plus correction suggestions that use ingredients they already have at home. The app plans weekly meals via AI, auto-generates shopping lists, and tracks cross-day imbalance detection backed by a personalized profile.
 
 ## Development Setup
 
@@ -24,27 +24,46 @@ Windows note: `pip-system-certs` (in `backend/requirements.txt`) is needed when 
 
 ## Key Conventions
 
-- **Naming:** kebab-case routes (`/log`, `/coach`), snake_case Python, camelCase TypeScript, `font-headline` (Manrope) for headings + `font-body`/`font-label` (Inter) elsewhere.
+- **Naming:** kebab-case routes (`/log`, `/coach`, `/calendar`), snake_case Python, camelCase TypeScript, `font-headline` (Manrope) for headings + `font-body`/`font-label` (Inter) elsewhere.
 - **Branching:** all changes via PRs to `main`; the other team member reviews before merge (see `TEAM-CONTRACT.md`).
 - **Testing:** Pytest for backend (`tests/`), Jest for frontend (`frontend/`). Run `python -m pytest` and `npm test`.
 - **Design system:** Vitality Framework — primary `#176a21`, secondary `#006666`, tertiary `#a83206`, `0.75rem` `rounded-xl` default. Tokens live in `frontend/tailwind.config.ts`; component classes in `frontend/app/globals.css` (`.card-soft`, `.btn-primary`, `.btn-soft`, `.input-soft`).
+- **API centralization:** All backend calls go through `frontend/lib/api.ts` — never duplicate fetch logic in page files.
+- **Auth:** `frontend/lib/auth.tsx` provides `AuthProvider`, `useAuth()`, and `useUserId()`. All pages use `useUserId()` instead of hardcoded user IDs.
 - **Comments:** minimal — explain *why* not *what*. Don't repeat what the code says.
 
 ## Important Files
 
-- `backend/app.py` — Flask API endpoints (analyze, profile, plan, inventory, history, export, user/data)
-- `backend/ai.py` — OpenRouter calls (Gemini 3 Flash primary, GPT-4o fallback), timeout + exponential backoff, episode-logged
-- `backend/db.py` — Supabase helpers; all queries filter by `user_id`
+- `backend/app.py` — Flask API endpoints (analyze, chat, profile, plan, meal-plans, shopping-list, inventory, history, auth, export, user/data)
+- `backend/ai.py` — OpenRouter calls (Gemini 3 Flash primary, GPT-4o fallback), plan_day, plan_week, generate_shopping_list, timeout + exponential backoff, episode-logged
+- `backend/db.py` — Supabase helpers; all queries filter by `user_id`. Tables: inventory, meal_logs, user_profiles, meal_plans, shopping_items
 - `backend/mcp_server.py` — MCP server (`search_food_database`, `log_meal_intake`) with HMAC auth + Pydantic validation
 - `backend/episode_logger.py` — `logs/episode-log.jsonl` writer; never logs raw meal text
-- `backend/schema.sql` — authoritative Supabase schema (inventory, meal_logs, user_profiles)
+- `backend/schema.sql` — authoritative Supabase schema (5 tables)
+- `frontend/lib/api.ts` — typed backend client (single source of truth for ALL API calls)
+- `frontend/lib/auth.tsx` — AuthProvider context, useAuth(), useUserId()
 - `frontend/app/_chrome.tsx` — shared TopBar + 5-item BottomNav
 - `frontend/app/globals.css` + `tailwind.config.ts` — design tokens
-- `frontend/lib/api.ts` — typed backend client (single source of truth)
 - `docs/design-review/DESIGN-REVIEW.md` — Lab 3 spec, what we promised
 - `docs/data-map.md` — GDPR / retention contract
 - `docs/safety-audit.md` — Lab 8 audit, agent architecture, eval results
 - `.env.example` — required environment variables (never commit `.env`)
+
+## Routes
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Dashboard | Calorie ring, macro bars, today's meals, AI insight |
+| `/log` | Log Meal | Photo scan or text entry, AI nutrient analysis, save to history |
+| `/inventory` | Pantry | CRUD fridge/pantry items with icon tiles |
+| `/history` | History | Date-filtered meal log with macro consistency bars |
+| `/coach` | AI Coach | Chat with AI nutrition coach |
+| `/plan` | Day Plan | AI-generated single-day meal plan |
+| `/calendar` | Calendar | 7-day week view, AI weekly plan, manual meal entry |
+| `/shopping` | Shopping | Auto-generated shopping list from weekly plan |
+| `/settings` | Settings | Profile targets, diet/goals, about you, GDPR export/delete, logout |
+| `/login` | Login | Email/password login |
+| `/register` | Register | Email/password signup |
 
 ## What Not to Touch Without Team Discussion
 
@@ -55,11 +74,12 @@ Windows note: `pip-system-certs` (in `backend/requirements.txt`) is needed when 
 
 ## Current Focus
 
-Post Lab 8 (Safety + Eval audit submitted at commit `bc11e96`). Now extending the product surface to match the Design Review's full feature list:
-- `/coach` AI chat (live)
-- `/plan` AI meal planner (live)
-- `/settings` profile + GDPR (live)
-- Dashboard reads from `/api/profile` so calorie/macro targets are personalized.
-- Cross-day imbalance context now passed into `/api/analyze` server-side.
+Full feature set implemented:
+- Auth (login/register) with Supabase
+- Weekly AI meal calendar with manual entry
+- Auto-generated shopping list (compares plan vs inventory)
+- Profile-aware AI analysis, planning, and coaching
+- GDPR export/delete
+- Centralized API client and auth context
 
-Next planned: real Supabase auth (replace hardcoded `demo-user`), voice meal logging (TTS/STT), generated meal-image previews on `/plan`.
+Next planned: voice meal logging (TTS/STT), meal image generation on calendar, rate limiting, tighter RLS policies.

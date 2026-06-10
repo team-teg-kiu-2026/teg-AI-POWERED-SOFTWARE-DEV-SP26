@@ -1,23 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DEMO_USER_ID } from "@/lib/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
-async function sendChat(message: string, userId: string): Promise<string> {
-  const res = await fetch(`${API_URL}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, user_id: userId }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error ?? "Chat failed");
-  }
-  const data = await res.json();
-  return data.response as string;
-}
+import { sendChat } from "@/lib/api";
+import { useUserId } from "@/lib/auth";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -28,6 +13,7 @@ const STARTERS = [
 ];
 
 export default function Coach() {
+  const userId = useUserId();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,7 +34,7 @@ export default function Coach() {
     setMessages((m) => [...m, { role: "user", content: msg }]);
     setLoading(true);
     try {
-      const reply = await sendChat(msg, DEMO_USER_ID);
+      const reply = await sendChat(msg, userId);
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Coach is unavailable.");

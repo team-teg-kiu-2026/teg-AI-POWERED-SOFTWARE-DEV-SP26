@@ -26,6 +26,10 @@ Thumbs.db
 
 # Build
 *.log
+tsconfig.tsbuildinfo
+
+# Runtime logs
+logs/
 
 # Stitch HTML cache (regenerated from Stitch MCP)
 .stitch-cache/

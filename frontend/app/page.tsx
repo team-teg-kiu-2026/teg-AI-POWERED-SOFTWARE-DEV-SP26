@@ -5,11 +5,11 @@ import Link from "next/link";
 import {
   getMealHistory,
   getProfile,
-  DEMO_USER_ID,
   type MealLog,
   type NutrientData,
   type UserProfile,
 } from "@/lib/api";
+import { useUserId } from "@/lib/auth";
 
 const ZERO: NutrientData = {
   calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sugar_g: 0, fiber_g: 0,
@@ -74,6 +74,7 @@ function MacroBar({ label, value, target, colorClass }: {
 }
 
 export default function Dashboard() {
+  const userId = useUserId();
   const [logs, setLogs] = useState<MealLog[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,14 +82,14 @@ export default function Dashboard() {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    Promise.all([getMealHistory(DEMO_USER_ID, today), getProfile(DEMO_USER_ID)])
+    Promise.all([getMealHistory(userId, today), getProfile(userId)])
       .then(([l, p]) => {
         setLogs(l);
         setProfile(p);
       })
       .catch(() => setError("Could not load today's data. Make sure the backend is running."))
       .finally(() => setLoading(false));
-  }, [today]);
+  }, [userId, today]);
 
   const totals = sumNutrients(logs);
   const calorieTarget = profile?.calorie_target ?? 2000;

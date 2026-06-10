@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 
 export function TopBar() {
+  const { user } = useAuth();
   return (
     <header className="fixed top-0 w-full z-50 bg-[#f6f6f6]/80 backdrop-blur-xl border-b border-outline-variant/30">
       <div className="max-w-2xl mx-auto flex justify-between items-center px-6 py-4">
@@ -19,11 +21,11 @@ export function TopBar() {
         </Link>
         <div className="flex items-center gap-3">
           <Link
-            href="/plan"
-            className="text-primary hover:opacity-80 active:scale-95 transition-all duration-200"
-            aria-label="Today's meal plan"
+            href="/shopping"
+            className="text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-200"
+            aria-label="Shopping list"
           >
-            <span className="material-symbols-outlined">auto_awesome</span>
+            <span className="material-symbols-outlined">shopping_cart</span>
           </Link>
           <Link
             href="/settings"
@@ -32,6 +34,14 @@ export function TopBar() {
           >
             <span className="material-symbols-outlined">settings</span>
           </Link>
+          {!user && (
+            <Link
+              href="/login"
+              className="text-xs font-bold text-primary bg-primary-container/40 px-3 py-1.5 rounded-full hover:bg-primary-container/60 transition-colors"
+            >
+              Log in
+            </Link>
+          )}
         </div>
       </div>
     </header>
@@ -39,11 +49,11 @@ export function TopBar() {
 }
 
 const NAV_ITEMS = [
-  { href: "/",          label: "Home",    icon: "home"        },
-  { href: "/inventory", label: "Pantry",  icon: "kitchen"     },
-  { href: "/log",       label: "Log",     icon: "add_circle", primary: true },
-  { href: "/coach",     label: "Coach",   icon: "smart_toy"   },
-  { href: "/history",   label: "History", icon: "restaurant"  },
+  { href: "/",          label: "Home",     icon: "home" },
+  { href: "/calendar",  label: "Calendar", icon: "calendar_month" },
+  { href: "/log",       label: "Log",      icon: "add_circle", primary: true },
+  { href: "/inventory", label: "Pantry",   icon: "kitchen" },
+  { href: "/coach",     label: "Coach",    icon: "smart_toy" },
 ] as const;
 
 export function BottomNav() {

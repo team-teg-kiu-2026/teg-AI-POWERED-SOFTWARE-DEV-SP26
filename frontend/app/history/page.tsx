@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMealHistory, DEMO_USER_ID, type MealLog, type NutrientData } from "@/lib/api";
+import { getMealHistory, getProfile, type MealLog, type NutrientData, type UserProfile } from "@/lib/api";
+import { useUserId } from "@/lib/auth";
 
 const ZERO: NutrientData = {
   calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sugar_g: 0, fiber_g: 0,
@@ -22,25 +23,34 @@ function sumNutrients(logs: MealLog[]): NutrientData {
 }
 
 export default function History() {
+  const userId = useUserId();
   const today = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(today);
   const [logs, setLogs] = useState<MealLog[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    getProfile(userId).then(setProfile).catch(() => {/* use defaults */});
+  }, [userId]);
+
+  useEffect(() => {
     setLoading(true);
     setError("");
-    getMealHistory(DEMO_USER_ID, date)
+    getMealHistory(userId, date)
       .then(setLogs)
       .catch(() => setError("Could not load history. Is the backend running?"))
       .finally(() => setLoading(false));
-  }, [date]);
+  }, [userId, date]);
 
   const totals = sumNutrients(logs);
-  const proteinPct = Math.min((totals.protein_g / 120) * 100, 100);
-  const carbsPct   = Math.min((totals.carbs_g   / 250) * 100, 100);
-  const fatPct     = Math.min((totals.fat_g     /  70) * 100, 100);
+  const proteinTarget = profile?.protein_target_g ?? 120;
+  const carbsTarget   = profile?.carbs_target_g ?? 250;
+  const fatTarget     = profile?.fat_target_g ?? 70;
+  const proteinPct = Math.min((totals.protein_g / proteinTarget) * 100, 100);
+  const carbsPct   = Math.min((totals.carbs_g   / carbsTarget)   * 100, 100);
+  const fatPct     = Math.min((totals.fat_g     / fatTarget)     * 100, 100);
 
   return (
     <>

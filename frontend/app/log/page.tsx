@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { analyzeMeal, logMeal, DEMO_USER_ID, type MealAnalysis } from "@/lib/api";
+import { analyzeMeal, logMeal, type MealAnalysis } from "@/lib/api";
+import { useUserId } from "@/lib/auth";
 
 const CONFIDENCE_BADGE = {
   high:   "bg-primary-container/40    text-on-primary-container",
@@ -10,6 +11,7 @@ const CONFIDENCE_BADGE = {
 };
 
 export default function LogMeal() {
+  const userId = useUserId();
   const [text, setText] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -23,6 +25,7 @@ export default function LogMeal() {
   function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     setImage(file);
+    if (preview) URL.revokeObjectURL(preview);
     setPreview(file ? URL.createObjectURL(file) : null);
   }
 
@@ -36,7 +39,7 @@ export default function LogMeal() {
     setSaved(false);
     setLoading(true);
     try {
-      const data = await analyzeMeal(text, DEMO_USER_ID, image ?? undefined);
+      const data = await analyzeMeal(text, userId, image ?? undefined);
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed.");
@@ -49,7 +52,7 @@ export default function LogMeal() {
     if (!result) return;
     setSaving(true);
     try {
-      await logMeal(DEMO_USER_ID, result, text || "Photo meal");
+      await logMeal(userId, result, text || "Photo meal");
       setSaved(true);
     } catch {
       setError("Failed to save meal.");

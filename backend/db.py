@@ -1,7 +1,9 @@
+import logging
 import os
-from datetime import date
+from datetime import date, timedelta
 from supabase import create_client, Client
 
+_log = logging.getLogger(__name__)
 _client: Client | None = None
 
 
@@ -74,6 +76,8 @@ def add_meal_log(
 def delete_user_data(user_id: str) -> None:
     _db().table("inventory").delete().eq("user_id", user_id).execute()
     _db().table("meal_logs").delete().eq("user_id", user_id).execute()
+    _db().table("meal_plans").delete().eq("user_id", user_id).execute()
+    _db().table("shopping_items").delete().eq("user_id", user_id).execute()
     _db().table("user_profiles").delete().eq("user_id", user_id).execute()
 
 
@@ -103,13 +107,105 @@ def get_profile(user_id: str) -> dict | None:
 def upsert_profile(user_id: str, fields: dict) -> dict:
     payload = {k: v for k, v in fields.items() if k in PROFILE_DEFAULTS}
     payload["user_id"] = user_id
-    payload["updated_at"] = "now()"
-    # Supabase python client doesn't render now() — use server default by omitting it
-    payload.pop("updated_at")
     result = (
         _db()
         .table("user_profiles")
         .upsert(payload, on_conflict="user_id")
         .execute()
     )
+    return result.data[0]
+
+
+# ── Meal plans (calendar) ────────────────────────────────────────────────────
+
+def get_meal_plans(user_id: str, week_start: str) -> list[dict]:
+    end = str(date.fromisoformat(week_start) + timedelta(days=6))
+    result = (
+        _db()
+        .table("meal_plans")
+        .select("*")
+        .eq("user_id", user_id)
+        .gte("plan_date", week_start)
+        .lte("plan_date", end)
+        .order("plan_date")
+        .order("meal_type")
+        .execute()
+    )
+    return result.data
+
+
+def add_meal_plan(user_id: str, plan_date: str, meal_type: str,
+                  meal_name: str, ingredients: list | None = None,
+                  nutrients: dict | None = None, is_ai: bool = False,
+                  notes: str | None = None) -> dict:
+    row = {
+        "user_id": user_id,
+        "plan_date": plan_date,
+        "meal_type": meal_type,
+        "meal_name": meal_name,
+        "ingredients": ingredients or [],
+        "nutrients": nutrients or {},
+        "is_ai": is_ai,
+    }
+    if notes:
+        row["notes"] = notes
+    result = _db().table("meal_plans").insert(row).execute()
+    return result.data[0]
+
+
+def update_meal_plan(plan_id: str, fields: dict) -> dict:
+    allowed = {"plan_date", "meal_type", "meal_name", "ingredients", "nutrients", "is_ai", "notes"}
+    payload = {k: v for k, v in fields.items() if k in allowed}
+    result = _db().table("meal_plans").update(payload).eq("id", plan_id).execute()
+    return result.data[0]
+
+
+def delete_meal_plan(plan_id: str) -> None:
+    _db().table("meal_plans").delete().eq("id", plan_id).execute()
+
+
+def clear_ai_meal_plans(user_id: str, week_start: str) -> None:
+    end = str(date.fromisoformat(week_start) + timedelta(days=6))
+    (
+        _db()
+        .table("meal_plans")
+        .delete()
+        .eq("user_id", user_id)
+        .eq("is_ai", True)
+        .gte("plan_date", week_start)
+        .lte("plan_date", end)
+        .execute()
+    )
+
+
+# ── Shopping list ─────────────────────────────────────────────────────────────
+
+def get_shopping_items(user_id: str, week_start: str) -> list[dict]:
+    result = (
+        _db()
+        .table("shopping_items")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("week_start", week_start)
+        .order("item_name")
+        .execute()
+    )
+    return result.data
+
+
+def set_shopping_items(user_id: str, week_start: str, items: list[dict]) -> list[dict]:
+    _db().table("shopping_items").delete().eq("user_id", user_id).eq("week_start", week_start).execute()
+    if not items:
+        return []
+    rows = [
+        {"user_id": user_id, "week_start": week_start, "item_name": i["item_name"],
+         "quantity": i.get("quantity", 1), "unit": i.get("unit", "piece"), "checked": False}
+        for i in items
+    ]
+    result = _db().table("shopping_items").insert(rows).execute()
+    return result.data
+
+
+def update_shopping_item(item_id: str, checked: bool) -> dict:
+    result = _db().table("shopping_items").update({"checked": checked}).eq("id", item_id).execute()
     return result.data[0]

@@ -5,9 +5,9 @@ import {
   getInventory,
   addInventoryItem,
   deleteInventoryItem,
-  DEMO_USER_ID,
   type InventoryItem,
 } from "@/lib/api";
+import { useUserId } from "@/lib/auth";
 
 const UNITS = ["piece", "g", "kg", "ml", "L", "cup", "tbsp", "tsp"];
 
@@ -36,6 +36,7 @@ function iconFor(name: string): string {
 }
 
 export default function Inventory() {
+  const userId = useUserId();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,11 +47,11 @@ export default function Inventory() {
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    getInventory(DEMO_USER_ID)
+    getInventory(userId)
       .then(setItems)
       .catch(() => setError("Could not load inventory. Is the backend running?"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId]);
 
   async function handleAdd() {
     const trimmed = name.trim();
@@ -58,7 +59,7 @@ export default function Inventory() {
     setAdding(true);
     setError("");
     try {
-      const item = await addInventoryItem(DEMO_USER_ID, {
+      const item = await addInventoryItem(userId, {
         item_name: trimmed,
         quantity: parseFloat(qty) || 1,
         unit,
