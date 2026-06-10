@@ -68,10 +68,10 @@ export default function LogMeal() {
       {/* Header */}
       <section>
         <h1 className="text-3xl font-extrabold tracking-tighter text-on-surface font-headline">
-          What's on your plate?
+          What&apos;s on your plate?
         </h1>
         <p className="text-on-surface-variant text-sm mt-1">
-          Describe a meal or upload a photo — we'll analyze the nutrients.
+          Describe a meal or upload a photo — we&apos;ll analyze the nutrients.
         </p>
       </section>
 
@@ -99,6 +99,7 @@ export default function LogMeal() {
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
         </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         {preview && (
           <img src={preview} alt="meal preview" className="mt-4 rounded-xl max-h-48 object-cover mx-auto shadow-sm" />
         )}

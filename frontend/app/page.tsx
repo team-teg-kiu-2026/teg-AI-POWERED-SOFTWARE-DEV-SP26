@@ -139,7 +139,7 @@ export default function Dashboard() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-headline font-bold text-on-secondary-container">
-              Plan today's meals
+              Plan today&apos;s meals
             </p>
             <p className="text-xs text-on-secondary-container/80 mt-0.5">
               Generate suggestions using your pantry and goals
@@ -168,7 +168,7 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 bg-surface-container-lowest rounded-xl p-6 space-y-4 shadow-sm">
           <div className="flex justify-between items-center">
-            <h3 className="font-headline font-bold text-on-surface">Today's meals</h3>
+            <h3 className="font-headline font-bold text-on-surface">Today&apos;s meals</h3>
             <span className="text-xs font-bold text-primary bg-primary-container/30 px-2 py-1 rounded-full">
               {logs.length} logged
             </span>

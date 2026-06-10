@@ -91,7 +91,7 @@ export default function Inventory() {
           Your pantry
         </h1>
         <p className="text-on-surface-variant text-sm mt-1">
-          What's in your fridge powers our meal suggestions.
+          What&apos;s in your fridge powers our meal suggestions.
         </p>
       </section>
 
