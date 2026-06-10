@@ -14,9 +14,10 @@ node_modules/
 dist/
 .next/
 
-# IDE
+# IDE & tools
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 
