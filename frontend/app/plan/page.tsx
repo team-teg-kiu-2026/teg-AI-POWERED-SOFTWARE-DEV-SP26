@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { getDailyPlan, type PlannedMeal, type DailyPlan } from "@/lib/api";
 import { useUserId } from "@/lib/auth";
 
@@ -76,6 +77,24 @@ export default function Plan() {
         </section>
       )}
 
+      {/* Auto-saved to calendar banner */}
+      {plan && !loading && meals.length > 0 && (
+        <Link
+          href="/calendar"
+          className="flex items-center gap-2.5 rounded-lg bg-primary-container/30 border border-primary/15 px-4 py-2.5 transition-colors hover:bg-primary-container/50"
+        >
+          <span className="material-symbols-outlined material-symbols-filled text-primary text-lg">
+            event_available
+          </span>
+          <span className="text-sm font-semibold text-on-primary-container">
+            Meals added to your calendar
+          </span>
+          <span className="material-symbols-outlined text-on-primary-container/60 text-base ml-auto">
+            arrow_forward
+          </span>
+        </Link>
+      )}
+
       {/* Refresh button */}
       <section className="flex items-center justify-between gap-3">
         <h2 className="font-headline text-xl font-bold tracking-tight text-on-surface">
@@ -127,7 +146,7 @@ export default function Plan() {
         <section className="space-y-4">
           {meals.map((meal, idx) => (
             <article key={`${meal.meal_type}-${idx}`} className="card-soft space-y-4">
-              {/* Meal-type pill */}
+              {/* Meal-type pill + calendar badge */}
               <div className="flex items-center justify-between gap-3">
                 <span className="inline-flex items-center gap-2 bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-bold font-label uppercase tracking-widest">
                   <span className="material-symbols-outlined text-sm">
@@ -135,9 +154,17 @@ export default function Plan() {
                   </span>
                   {meal.meal_type}
                 </span>
-                <span className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                  #{idx + 1}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 text-primary/70 text-[10px] font-bold uppercase tracking-widest">
+                    <span className="material-symbols-outlined material-symbols-filled text-sm">
+                      event_available
+                    </span>
+                    Saved
+                  </span>
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                    #{idx + 1}
+                  </span>
+                </div>
               </div>
 
               {/* Name */}

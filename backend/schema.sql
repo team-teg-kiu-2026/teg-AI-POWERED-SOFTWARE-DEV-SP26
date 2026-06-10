@@ -62,6 +62,14 @@ CREATE TABLE IF NOT EXISTS shopping_items (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id          UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id     TEXT        NOT NULL,
+    role        TEXT        NOT NULL CHECK (role IN ('user','assistant')),
+    content     TEXT        NOT NULL,
+    created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Enable Row Level Security (configure policies in the Supabase dashboard
 -- once you add proper authentication).
 ALTER TABLE inventory      ENABLE ROW LEVEL SECURITY;
@@ -69,6 +77,7 @@ ALTER TABLE meal_logs      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meal_plans     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shopping_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages  ENABLE ROW LEVEL SECURITY;
 
 -- Permissive dev policy — remove before production.
 CREATE POLICY "allow_all_dev" ON inventory      FOR ALL USING (true) WITH CHECK (true);
@@ -76,3 +85,4 @@ CREATE POLICY "allow_all_dev" ON meal_logs      FOR ALL USING (true) WITH CHECK 
 CREATE POLICY "allow_all_dev" ON user_profiles  FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "allow_all_dev" ON meal_plans     FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "allow_all_dev" ON shopping_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all_dev" ON chat_messages  FOR ALL USING (true) WITH CHECK (true);

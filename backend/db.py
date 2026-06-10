@@ -78,6 +78,7 @@ def delete_user_data(user_id: str) -> None:
     _db().table("meal_logs").delete().eq("user_id", user_id).execute()
     _db().table("meal_plans").delete().eq("user_id", user_id).execute()
     _db().table("shopping_items").delete().eq("user_id", user_id).execute()
+    _db().table("chat_messages").delete().eq("user_id", user_id).execute()
     _db().table("user_profiles").delete().eq("user_id", user_id).execute()
 
 
@@ -164,6 +165,11 @@ def delete_meal_plan(plan_id: str) -> None:
     _db().table("meal_plans").delete().eq("id", plan_id).execute()
 
 
+def clear_ai_day_plans(user_id: str, plan_date: str) -> None:
+    """Delete AI-generated meal plans for a single day only."""
+    _db().table("meal_plans").delete().eq("user_id", user_id).eq("is_ai", True).eq("plan_date", plan_date).execute()
+
+
 def clear_ai_meal_plans(user_id: str, week_start: str) -> None:
     end = str(date.fromisoformat(week_start) + timedelta(days=6))
     (
@@ -209,3 +215,32 @@ def set_shopping_items(user_id: str, week_start: str, items: list[dict]) -> list
 def update_shopping_item(item_id: str, checked: bool) -> dict:
     result = _db().table("shopping_items").update({"checked": checked}).eq("id", item_id).execute()
     return result.data[0]
+
+
+# ── Chat messages ────────────────────────────────────────────────────────────
+
+def get_chat_messages(user_id: str, limit: int = 50) -> list[dict]:
+    result = (
+        _db()
+        .table("chat_messages")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("created_at")
+        .limit(limit)
+        .execute()
+    )
+    return result.data
+
+
+def add_chat_message(user_id: str, role: str, content: str) -> dict:
+    result = (
+        _db()
+        .table("chat_messages")
+        .insert({"user_id": user_id, "role": role, "content": content})
+        .execute()
+    )
+    return result.data[0]
+
+
+def clear_chat_messages(user_id: str) -> None:
+    _db().table("chat_messages").delete().eq("user_id", user_id).execute()

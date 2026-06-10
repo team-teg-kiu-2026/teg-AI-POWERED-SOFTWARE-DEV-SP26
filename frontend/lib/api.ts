@@ -102,6 +102,14 @@ export interface ShoppingItem {
   created_at: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  user_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function handleResponse<T>(res: Response, fallbackMsg: string): Promise<T> {
@@ -214,6 +222,16 @@ export async function sendChat(message: string, userId: string): Promise<string>
   });
   const data = await handleResponse<{ response: string }>(res, "Chat failed");
   return data.response;
+}
+
+export async function getChatHistory(userId: string): Promise<ChatMessage[]> {
+  const res = await fetch(`${API_URL}/api/chat-history?user_id=${userId}`);
+  return handleResponse(res, "Failed to fetch chat history");
+}
+
+export async function clearChatHistory(userId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/chat-history?user_id=${userId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to clear chat history");
 }
 
 // ── Daily plan (legacy single-day) ──────────────────────────────────────────

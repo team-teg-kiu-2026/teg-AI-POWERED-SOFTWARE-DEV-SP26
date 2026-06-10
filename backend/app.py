@@ -128,9 +128,40 @@ def chat():
 
     try:
         response_text = ai.chat(message, inventory_names)
-        return jsonify({"response": response_text})
     except Exception as exc:
         return _json_error(f"Chat failed: {exc}", 502)
+
+    # Persist both sides of the conversation
+    try:
+        database.add_chat_message(user_id, "user", message)
+        database.add_chat_message(user_id, "assistant", response_text)
+    except Exception as exc:
+        _log.warning("Failed to persist chat messages for %s: %s", user_id, exc)
+
+    return jsonify({"response": response_text})
+
+
+# ── Chat history ─────────────────────────────────────────────────────────────
+
+@app.route("/api/chat-history", methods=["GET"])
+def get_chat_history():
+    user_id = request.args.get("user_id", "demo-user")
+    limit = int(request.args.get("limit", 50))
+    try:
+        messages = database.get_chat_messages(user_id, limit)
+        return jsonify(messages)
+    except Exception as exc:
+        return _json_error(str(exc), 500)
+
+
+@app.route("/api/chat-history", methods=["DELETE"])
+def clear_chat_history():
+    user_id = request.args.get("user_id", "demo-user")
+    try:
+        database.clear_chat_messages(user_id)
+        return "", 204
+    except Exception as exc:
+        return _json_error(str(exc), 500)
 
 
 # ── Inventory ─────────────────────────────────────────────────────────────────
@@ -253,9 +284,33 @@ def get_plan():
 
     try:
         result = ai.plan_day(profile, inventory_names, totals)
-        return jsonify(result)
     except Exception as exc:
         return _json_error(f"Plan generation failed: {exc}", 502)
+
+    # Auto-save generated meals to the calendar for today
+    today_str = str(date.today())
+    try:
+        database.clear_ai_day_plans(user_id, today_str)
+        for meal in result.get("meals", []):
+            database.add_meal_plan(
+                user_id=user_id,
+                plan_date=today_str,
+                meal_type=meal.get("meal_type", "snack"),
+                meal_name=meal.get("name", "Unnamed"),
+                ingredients=meal.get("ingredients", []),
+                nutrients={
+                    "calories": meal.get("calories", 0),
+                    "protein_g": meal.get("protein_g", 0),
+                    "carbs_g": meal.get("carbs_g", 0),
+                    "fat_g": meal.get("fat_g", 0),
+                },
+                is_ai=True,
+                notes=meal.get("reason"),
+            )
+    except Exception as exc:
+        _log.warning("Failed to auto-save daily plan to calendar for %s: %s", user_id, exc)
+
+    return jsonify(result)
 
 
 # ── Meal plans (calendar) ────────────────────────────────────────────────────

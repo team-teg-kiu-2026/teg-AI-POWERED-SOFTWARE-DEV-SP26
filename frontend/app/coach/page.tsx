@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { sendChat } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { sendChat, getChatHistory, clearChatHistory } from "@/lib/api";
 import { useUserId } from "@/lib/auth";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const STARTERS = [
   "Am I getting enough protein today?",
-  "What's a healthy snack from my fridge?",
+  "What’s a healthy snack from my fridge?",
   "How do I cut sugar without feeling tired?",
 ];
 
@@ -17,9 +17,29 @@ export default function Coach() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastSent, setLastSent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Load chat history on mount
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const history = await getChatHistory(userId);
+      setMessages(
+        history.map((m) => ({ role: m.role, content: m.content }))
+      );
+    } catch {
+      // Silently fall back to empty state
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -50,7 +70,17 @@ export default function Coach() {
     handleSend(lastSent);
   }
 
-  const empty = messages.length === 0;
+  async function handleClear() {
+    try {
+      await clearChatHistory(userId);
+      setMessages([]);
+      setError("");
+    } catch {
+      setError("Failed to clear chat history.");
+    }
+  }
+
+  const empty = messages.length === 0 && !historyLoading;
 
   return (
     <>
@@ -61,7 +91,7 @@ export default function Coach() {
             smart_toy
           </span>
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-extrabold tracking-tighter text-on-surface font-headline leading-tight">
             AI Health Coach
           </h1>
@@ -69,7 +99,38 @@ export default function Coach() {
             Personalized nutrition guidance, in your pocket.
           </p>
         </div>
+        {messages.length > 0 && (
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label="Clear chat history"
+            title="Clear chat history"
+            className="btn-soft w-9 h-9 !p-0 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-error transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">delete</span>
+          </button>
+        )}
       </section>
+
+      {/* Loading skeleton */}
+      {historyLoading && (
+        <section className="space-y-4 animate-pulse">
+          <div className="flex justify-end">
+            <div className="h-10 w-48 bg-primary/10 rounded-2xl rounded-br-md" />
+          </div>
+          <div className="flex gap-2 items-end">
+            <div className="w-8 h-8 rounded-full bg-primary-container/40 shrink-0" />
+            <div className="h-16 w-64 bg-surface-container-lowest rounded-2xl rounded-bl-md" />
+          </div>
+          <div className="flex justify-end">
+            <div className="h-10 w-36 bg-primary/10 rounded-2xl rounded-br-md" />
+          </div>
+          <div className="flex gap-2 items-end">
+            <div className="w-8 h-8 rounded-full bg-primary-container/40 shrink-0" />
+            <div className="h-12 w-56 bg-surface-container-lowest rounded-2xl rounded-bl-md" />
+          </div>
+        </section>
+      )}
 
       {/* Empty state */}
       {empty && (
@@ -82,7 +143,7 @@ export default function Coach() {
               Ask your nutrition coach anything.
             </h2>
             <p className="text-on-surface-variant text-sm mt-2 leading-relaxed">
-              From macros to mindful eating — tap a starter or type your own question below.
+              From macros to mindful eating &mdash; tap a starter or type your own question below.
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -101,7 +162,7 @@ export default function Coach() {
       )}
 
       {/* Chat thread */}
-      {!empty && (
+      {!empty && !historyLoading && (
         <section className="space-y-4">
           {messages.map((m, i) => (
             <MessageBubble key={i} msg={m} />
@@ -142,7 +203,7 @@ export default function Coach() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask your coach…"
+            placeholder="Ask your coach&hellip;"
             className="flex-1 bg-transparent border-none px-4 py-2 text-sm placeholder:text-on-surface-variant/60 focus:outline-none"
             disabled={loading}
           />
