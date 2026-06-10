@@ -1,0 +1,5 @@
+# Locust noise — keep the summary stats CSVs + report + screenshots, drop the rest
+__pycache__/
+locust_run_stats_history.csv
+locust_run_failures.csv
+locust_run_exceptions.csv

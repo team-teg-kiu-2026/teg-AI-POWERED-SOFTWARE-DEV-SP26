@@ -44,8 +44,9 @@ npx @modelcontextprotocol/inspector
 ## Architecture
 
 ```
-Next.js (Vercel) ──HTTP──> Flask (Render) ──OpenRouter──> Gemini 3 Flash (primary)
-                                                       └──> GPT-4o (fallback)
+Next.js (Vercel) ──HTTP──> Flask (Railway) ─OpenRouter──> Gemini 2.5 Flash (primary)
+                                                       ├──> GPT-4o (fallback)
+                                                       └──> Llama 3.3 70B (OSS fallback)
                            Flask ──────────────────────> Supabase (PostgreSQL, EU)
 ```
 
@@ -58,7 +59,7 @@ Next.js (Vercel) ──HTTP──> Flask (Render) ──OpenRouter──> Gemini
 ## Key Design Decisions
 
 - **No direct AI calls from frontend** — all LLM interactions go through the Flask backend
-- **Fallback chain:** Gemini 3 Flash → GPT-4o (configured in OpenRouter or manually)
+- **Fallback chain:** Gemini 2.5 Flash → GPT-4o → Llama 3.3 70B (env-driven: `PRIMARY_MODEL`/`SECONDARY_MODEL`/`OSS_FALLBACK` in `ai.py`)
 - **No PII in API calls** — nutrition data is anonymized before leaving the backend
 - **Episode logging:** AI calls are logged in JSON-lines format for tracing and cost tracking
 - **Prompt injection defense:** Input validation + strict system prompt on all user-facing AI endpoints
@@ -73,7 +74,7 @@ The actual application lives (or will live) in `frontend/` and `backend/`. The `
 
 ## Production Targets
 
-- Frontend deployed to **Vercel**
-- Backend deployed to **Render**
+- Frontend deployed to **Vercel** — https://frontend-eight-jet-41.vercel.app
+- Backend deployed to **Railway** — https://nutrismart-production-2965.up.railway.app
 - Git tags mark checkpoint completions: `lab5-working-endpoint`, `lab6-streaming`, etc.
 - All changes go through pull requests with peer review before merging to `main`

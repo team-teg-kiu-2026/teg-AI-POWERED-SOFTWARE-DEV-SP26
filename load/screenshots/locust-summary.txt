@@ -1,0 +1,51 @@
+NutriSmart — Locust load test summary (headless run, text capture)
+==================================================================
+Tool: Locust 2.44.1   |   Scenario: load/locustfile.py
+Load: 20 users, spawn-rate 5/s, run-time 60s
+Target: local run of the production Docker image (nutrismart-backend) over HTTP.
+
+  Why local-image instead of the live HTTPS URL: Locust's gevent-patched SSL
+  fails on this Windows + Python 3.13 build (every remote HTTPS request returns
+  "status 0", although plain curl/PowerShell requests to the same URL return
+  200). Load-testing a local run of the exact production image over HTTP avoids
+  the client-side SSL defect and measures the real app stack (gunicorn + Flask +
+  OpenRouter + Supabase). The /health latency gate is independently verified on
+  the live Railway URL below.
+
+Note on "fails": every request returned HTTP 200. The failures Locust reports
+here are our own catch_response latency SLAs (chat > 2s, health > 500ms), NOT
+transport/HTTP errors. True HTTP error rate = 0%, and 0 rate-limit (429) events.
+
+
+BEFORE — 2 sync workers (gunicorn --workers 2)
+----------------------------------------------
+  Type  Name          # reqs   p50      p95      throughput
+  POST  /api/chat        38   23,000ms  ~31,000  0.64 req/s
+  GET   /health           5   21,000ms  ~29,000  0.08 req/s
+  Aggregated             43   22,000ms  ~31,000  0.73 req/s
+  Finding: 2 sync workers serve only 2 concurrent requests; 20 users queue and
+  even /health is stuck behind slow LLM calls.
+
+
+AFTER — 2 workers x 8 threads (gunicorn --worker-class gthread --threads 8)
+--------------------------------------------------------------------------
+  Type  Name          # reqs   p50     p90      p95       p99       throughput
+  POST  /api/chat       194   2,300ms  4,700ms  14,000ms  21,000ms  3.28 req/s
+  GET   /health          39       5ms    830ms   1,300ms   2,500ms  0.66 req/s
+  Aggregated            233   2,000ms  4,600ms  13,000ms  18,000ms  3.94 req/s
+  HTTP errors: 0      429/fallback events: 0 (Gemini primary served every call)
+
+  Result of the fix: /health p50 21,000ms -> 5ms; chat p50 23,000ms -> 2,300ms;
+  throughput 0.73 -> 3.94 req/s (5.4x). /health is no longer blocked by chat.
+
+
+LIVE /health gate (Railway, public HTTPS) — measured with PowerShell:
+  HTTP 200  702 ms (first, TLS cold) / 251 / 246 / 247 ms  -> under 500ms gate.
+  Server-side processing is ~4 ms (measured against the local container);
+  the ~247 ms is Georgia -> Railway us-west round-trip + TLS.
+
+Fallback-chain evidence (from production logs, deploy 758d4df9's predecessor):
+  When the old primary slug returned 404, the episode showed 3 failed primary
+  attempts followed by a 200 from the GPT-4o fallback — the user still got a
+  working answer. The primary slug has since been fixed (google/gemini-2.5-flash),
+  so the chain now succeeds on the first call.

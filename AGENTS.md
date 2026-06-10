@@ -35,7 +35,7 @@ Windows note: `pip-system-certs` (in `backend/requirements.txt`) is needed when 
 ## Important Files
 
 - `backend/app.py` — Flask API endpoints (analyze, chat, profile, plan, meal-plans, shopping-list, inventory, history, auth, export, user/data)
-- `backend/ai.py` — OpenRouter calls (Gemini 3 Flash primary, GPT-4o fallback), plan_day, plan_week, generate_shopping_list, timeout + exponential backoff, episode-logged
+- `backend/ai.py` — OpenRouter calls (env-driven chain: `gemini-2.5-flash` primary → `gpt-4o` → `llama-3.3-70b` fallback), prompt-injection defenses (`_wrap_untrusted`/`_filter_output`), plan_day, plan_week, generate_shopping_list, timeout + exponential backoff, episode-logged
 - `backend/db.py` — Supabase helpers; all queries filter by `user_id`. Tables: inventory, meal_logs, user_profiles, meal_plans, shopping_items
 - `backend/mcp_server.py` — MCP server (`search_food_database`, `log_meal_intake`) with HMAC auth + Pydantic validation
 - `backend/episode_logger.py` — `logs/episode-log.jsonl` writer; never logs raw meal text

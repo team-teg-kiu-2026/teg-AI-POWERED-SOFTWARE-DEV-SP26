@@ -1,9 +1,12 @@
+# Railway build/deploy config for the NutriSmart backend.
+# Builds from backend/Dockerfile; the image CMD runs gunicorn under `sh -c`
+# so it correctly expands the $PORT Railway injects at runtime.
 [build]
-builder = "NIXPACKS"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
-healthcheckPath = "/api/inventory?user_id=health-check"
-healthcheckTimeout = 30
+healthcheckPath = "/health"
+healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

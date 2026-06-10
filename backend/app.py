@@ -56,6 +56,22 @@ def _week_start_from(d: date | None = None) -> str:
     return str(d - timedelta(days=d.weekday()))
 
 
+# ── Health check ──────────────────────────────────────────────────────────────
+
+@app.route("/health", methods=["GET"])
+def health():
+    """Liveness probe. Does NO external I/O so it always responds in <500ms.
+
+    Reports which model chain is configured so deploys can be verified at a
+    glance. This is the endpoint load balancers and the Lab 12 load test hit.
+    """
+    return jsonify({
+        "status": "ok",
+        "service": "nutrismart-backend",
+        "models": ai.MODEL_CHAIN,
+    }), 200
+
+
 # ── Meal analysis ─────────────────────────────────────────────────────────────
 
 @app.route("/api/analyze", methods=["POST"])

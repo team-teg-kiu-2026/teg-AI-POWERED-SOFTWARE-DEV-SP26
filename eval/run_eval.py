@@ -32,7 +32,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # ── Config ─────────────────────────────────────────────────────────────────────
 
 OR_API_KEY    = os.environ.get("OPENROUTER_API_KEY", "")
-JUDGE_MODEL   = "google/gemini-flash-1.5"
+JUDGE_MODEL   = os.environ.get("JUDGE_MODEL", "google/gemini-2.5-flash")
 APP_ENDPOINT  = os.environ.get("APP_ENDPOINT", "http://localhost:5000/api/chat")
 GOLDEN_SET    = Path(__file__).parent / "golden_set.json"
 RESULTS_DIR   = Path(__file__).parent / "results"

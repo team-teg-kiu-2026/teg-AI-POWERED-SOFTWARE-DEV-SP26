@@ -15,6 +15,10 @@ Run:
 import pytest
 import requests
 
+# These hit a live backend + Supabase, so they are integration tests. CI runs
+# `pytest -m "not integration"` and skips them; run them locally with the app up.
+pytestmark = pytest.mark.integration
+
 BASE_URL = "http://localhost:5000"
 USER_A   = "iso-test-user-a"
 USER_B   = "iso-test-user-b"
