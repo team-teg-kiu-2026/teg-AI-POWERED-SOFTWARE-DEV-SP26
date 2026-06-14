@@ -21,7 +21,8 @@ NutriSmart lets users log meals via text or photo, and tell the AI what ingredie
 
 - **App (Vercel):** https://frontend-eight-jet-41.vercel.app
 - **API (Railway):** https://nutrismart-production-2965.up.railway.app — health check at [`/health`](https://nutrismart-production-2965.up.railway.app/health)
-- **Demo video:** _2-minute narrated walkthrough — to be embedded here before Demo Day._
+- **Demo video:** _2-minute narrated walkthrough — to be embedded here before Demo Day._ -
+-  google drive link: https://drive.google.com/file/d/1eX8ZZZP85G4L7hpQPVwmOQyoqsr1wn-8/view?usp=drive_link
 
 ## Getting Started
 
